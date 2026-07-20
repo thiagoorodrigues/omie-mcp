@@ -25,10 +25,15 @@ export class OmieClient {
 
     const text = await res.text();
     let parsed: unknown = undefined;
-    try {
-      parsed = text ? JSON.parse(text) : {};
-    } catch {
-      parsed = undefined;
+    let parseFailed = false;
+    if (text) {
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parseFailed = true;
+      }
+    } else {
+      parsed = {};
     }
 
     if (parsed && typeof parsed === "object" && "faultstring" in parsed) {
@@ -43,6 +48,10 @@ export class OmieClient {
 
     if (!res.ok) {
       throw new OmieApiError(res.status, "HTTP", text || res.statusText, endpoint);
+    }
+
+    if (parseFailed) {
+      throw new OmieApiError(res.status, "PARSE", "Unexpected non-JSON response from Omie", endpoint);
     }
 
     return (parsed ?? {}) as T;

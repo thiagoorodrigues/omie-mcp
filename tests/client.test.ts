@@ -64,4 +64,24 @@ describe("OmieClient.call", () => {
       client.call("/geral/produtos/", "ListarProdutos", {})
     ).rejects.toBeInstanceOf(OmieApiError);
   });
+
+  it("throws OmieApiError when a 2xx response body is non-JSON", async () => {
+    const fetchMock = mockFetch(200, "<html>Internal error page</html>");
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new OmieClient(config);
+
+    await expect(
+      client.call("/geral/produtos/", "ListarProdutos", {})
+    ).rejects.toBeInstanceOf(OmieApiError);
+  });
+
+  it("resolves to {} when a 2xx response body is empty", async () => {
+    const fetchMock = mockFetch(200, "");
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new OmieClient(config);
+
+    const out = await client.call("/geral/produtos/", "ListarProdutos", {});
+
+    expect(out).toEqual({});
+  });
 });

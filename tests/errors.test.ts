@@ -27,4 +27,17 @@ describe("genericErrorResponse", () => {
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("boom");
   });
+
+  it("adds a rate-limit note when faultstring indicates a redundant call", () => {
+    const err = new OmieApiError(
+      500,
+      "SOAP-ENV:Client-5",
+      "Consumo redundante detectado",
+      "/geral/produtos/"
+    );
+    const res = genericErrorResponse(err);
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("redundante");
+    expect(res.content[0].text).toContain("consumo redundante / rate limit — retry later");
+  });
 });

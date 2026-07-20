@@ -72,4 +72,15 @@ describe("budgets_list", () => {
       filtrar_por_data_ate: "20/07/2026"
     });
   });
+
+  it("forwards only filtrar_por_data_de when filtrar_por_data_ate is not provided", async () => {
+    const client = mockClient(async () => ({}));
+    const tool = createBudgetsTools(client).find((t) => t.name === "budgets_list")!;
+    await tool.handler({ filtrar_por_data_de: "01/07/2026" });
+    expect(client.call).toHaveBeenCalledWith("/produtos/pedido/", "ListarPedidos", {
+      pagina: 1,
+      registros_por_pagina: 50,
+      filtrar_por_data_de: "01/07/2026"
+    });
+  });
 });
