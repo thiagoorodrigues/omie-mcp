@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { OmieClient } from "../client.js";
 import type { ToolDefinition } from "./types.js";
 import { paginationFields, toOmiePaging } from "../pagination.js";
-import { successResponse, genericErrorResponse } from "../errors.js";
+import { successResponse, genericErrorResponse, isNoRecordsFault } from "../errors.js";
 
 const ENDPOINT = "/produtos/pedido/";
 
@@ -76,13 +76,23 @@ export function createBudgetsTools(client: OmieClient): ToolDefinition[] {
         filtrar_por_data_de?: string;
         filtrar_por_data_ate?: string;
       }) => {
+        const paging = toOmiePaging(input);
         try {
-          const param: Record<string, unknown> = { ...toOmiePaging(input) };
+          const param: Record<string, unknown> = { ...paging };
           if (input.filtrar_por_data_de) param.filtrar_por_data_de = input.filtrar_por_data_de;
           if (input.filtrar_por_data_ate) param.filtrar_por_data_ate = input.filtrar_por_data_ate;
           const data = await client.call(ENDPOINT, "ListarPedidos", param);
           return successResponse(data);
         } catch (e) {
+          if (isNoRecordsFault(e)) {
+            return successResponse({
+              pagina: paging.pagina,
+              total_de_paginas: 0,
+              total_de_registros: 0,
+              registros: 0,
+              pedido_venda_produto: []
+            });
+          }
           return genericErrorResponse(e);
         }
       }

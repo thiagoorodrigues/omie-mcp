@@ -48,3 +48,11 @@ export function genericErrorResponse(err: unknown): McpToolResponse {
   if (err instanceof Error) return networkErrorResponse(err);
   return networkErrorResponse(new Error(String(err)));
 }
+
+export function isNoRecordsFault(err: unknown): boolean {
+  return (
+    err instanceof OmieApiError &&
+    (err.faultcode.includes("5113") ||
+      /n[aã]o existem registros/i.test(err.faultstring))
+  );
+}

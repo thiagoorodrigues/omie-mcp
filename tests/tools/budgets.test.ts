@@ -83,4 +83,21 @@ describe("budgets_list", () => {
       filtrar_por_data_de: "01/07/2026"
     });
   });
+
+  it("returns an empty envelope instead of isError when Omie reports no records (5113)", async () => {
+    const client = mockClient(async () => {
+      throw new OmieApiError(
+        500,
+        "SOAP-ENV:Client-5113",
+        "ERROR: Não existem registros para a página [1]!",
+        "/produtos/pedido/"
+      );
+    });
+    const tool = createBudgetsTools(client).find((t) => t.name === "budgets_list")!;
+    const res = await tool.handler({});
+    expect(res.isError).toBeFalsy();
+    const parsed = JSON.parse(res.content[0].text);
+    expect(parsed.total_de_registros).toBe(0);
+    expect(parsed.pedido_venda_produto).toEqual([]);
+  });
 });

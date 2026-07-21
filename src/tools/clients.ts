@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { OmieClient } from "../client.js";
 import type { ToolDefinition } from "./types.js";
 import { paginationFields, toOmiePaging } from "../pagination.js";
-import { successResponse, genericErrorResponse } from "../errors.js";
+import { successResponse, genericErrorResponse, isNoRecordsFault } from "../errors.js";
 
 const ENDPOINT = "/geral/clientes/";
 
@@ -28,8 +28,9 @@ export function createClientsTools(client: OmieClient): ToolDefinition[] {
         razao_social?: string;
         cnpj_cpf?: string;
       }) => {
+        const paging = toOmiePaging(input);
         try {
-          const param: Record<string, unknown> = { ...toOmiePaging(input) };
+          const param: Record<string, unknown> = { ...paging };
           const filtro: Record<string, string> = {};
           if (input.nome_fantasia) filtro.nome_fantasia = input.nome_fantasia;
           if (input.razao_social) filtro.razao_social = input.razao_social;
@@ -39,6 +40,15 @@ export function createClientsTools(client: OmieClient): ToolDefinition[] {
           const data = await client.call(ENDPOINT, "ListarClientes", param);
           return successResponse(data);
         } catch (e) {
+          if (isNoRecordsFault(e)) {
+            return successResponse({
+              pagina: paging.pagina,
+              total_de_paginas: 0,
+              total_de_registros: 0,
+              registros: 0,
+              clientes_cadastro: []
+            });
+          }
           return genericErrorResponse(e);
         }
       }

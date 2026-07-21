@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   OmieApiError,
   successResponse,
-  genericErrorResponse
+  genericErrorResponse,
+  isNoRecordsFault
 } from "../src/errors.js";
 
 describe("successResponse", () => {
@@ -39,5 +40,26 @@ describe("genericErrorResponse", () => {
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("redundante");
     expect(res.content[0].text).toContain("consumo redundante / rate limit — retry later");
+  });
+});
+
+describe("isNoRecordsFault", () => {
+  it("detects the 5113 'no records' fault by code", () => {
+    const err = new OmieApiError(
+      500,
+      "SOAP-ENV:Client-5113",
+      "ERROR: Não existem registros para a página [1]!",
+      "/produtos/pedido/"
+    );
+    expect(isNoRecordsFault(err)).toBe(true);
+  });
+
+  it("returns false for other OmieApiError faults", () => {
+    const err = new OmieApiError(500, "SOAP-ENV:Client-101", "Cliente nao cadastrado", "/x");
+    expect(isNoRecordsFault(err)).toBe(false);
+  });
+
+  it("returns false for non-OmieApiError errors", () => {
+    expect(isNoRecordsFault(new Error("boom"))).toBe(false);
   });
 });

@@ -32,6 +32,23 @@ describe("products_list", () => {
     const res = await tool.handler({});
     expect(res.isError).toBe(true);
   });
+
+  it("returns an empty envelope instead of isError when Omie reports no records (5113)", async () => {
+    const client = mockClient(async () => {
+      throw new OmieApiError(
+        500,
+        "SOAP-ENV:Client-5113",
+        "ERROR: Não existem registros para a página [1]!",
+        "/geral/produtos/"
+      );
+    });
+    const tool = createProductsTools(client).find((t) => t.name === "products_list")!;
+    const res = await tool.handler({});
+    expect(res.isError).toBeFalsy();
+    const parsed = JSON.parse(res.content[0].text);
+    expect(parsed.total_de_registros).toBe(0);
+    expect(parsed.produto_servico_cadastro).toEqual([]);
+  });
 });
 
 describe("products_get", () => {
